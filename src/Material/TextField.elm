@@ -21,6 +21,8 @@ module Material.TextField exposing
     , setSuffix
     , setEndAligned
     , setAttributes
+    , setInputAttributes
+    , setLabelAttributes
     , filled
     , outlined
     )
@@ -286,6 +288,8 @@ type Config msg
         , suffix : Maybe String
         , endAligned : Bool
         , additionalAttributes : List (Html.Attribute msg)
+        , additionalInputAttributes : List (Html.Attribute msg)
+        , additionalLabelAttributes : List (Html.Attribute msg)
         , onInput : Maybe (String -> msg)
         , onChange : Maybe (String -> msg)
         }
@@ -316,6 +320,8 @@ config =
         , suffix = Nothing
         , endAligned = False
         , additionalAttributes = []
+        , additionalInputAttributes = []
+        , additionalLabelAttributes = []
         , onInput = Nothing
         , onChange = Nothing
         }
@@ -456,6 +462,19 @@ setEndAligned endAligned (Config config_) =
 setAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
 setAttributes additionalAttributes (Config config_) =
     Config { config_ | additionalAttributes = additionalAttributes }
+
+
+{-| Specify additional attributes to be applied to the input element
+-}
+setInputAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
+setInputAttributes additionalInputAttributes (Config config_) =
+    Config { config_ | additionalInputAttributes = additionalInputAttributes }
+
+{-| Specify additional attributes to be applied to the label element
+-}
+setLabelAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
+setLabelAttributes additionalLabelAttributes (Config config_) =
+    Config { config_ | additionalLabelAttributes = additionalLabelAttributes }
 
 
 {-| Specify a message when the user changes the value inside the text field
@@ -827,7 +846,7 @@ changeHandler (Config { onChange }) =
 
 
 inputElt : Config msg -> Html msg
-inputElt config_ =
+inputElt ((Config { additionalInputAttributes }) as config_) =
     Html.input
         (List.filterMap identity
             [ inputCs
@@ -839,6 +858,7 @@ inputElt config_ =
             , minLengthAttr config_
             , maxLengthAttr config_
             ]
+            ++ additionalInputAttributes
         )
         []
 
@@ -861,6 +881,7 @@ typeAttr (Config { type_ }) =
     Maybe.map Html.Attributes.type_ type_
 
 
+
 ariaLabelAttr : Config msg -> Maybe (Html.Attribute msg)
 ariaLabelAttr (Config { fullwidth, placeholder, label }) =
     if fullwidth then
@@ -876,7 +897,7 @@ disabledProp (Config { disabled }) =
 
 
 labelElt : Config msg -> Html msg
-labelElt (Config { label, value, fullwidth }) =
+labelElt (Config { label, value, fullwidth, additionalLabelAttributes }) =
     let
         floatingLabelCs =
             "mdc-floating-label"
@@ -887,14 +908,14 @@ labelElt (Config { label, value, fullwidth }) =
     case ( fullwidth, label ) of
         ( False, Just str ) ->
             Html.span
-                [ if Maybe.withDefault "" value /= "" then
+                ([ if Maybe.withDefault "" value /= "" then
                     class (floatingLabelCs ++ " " ++ floatingLabelFloatAboveCs)
 
                   else
                     class floatingLabelCs
                 , Html.Attributes.property "foucClassNames"
                     (Encode.list Encode.string [ floatingLabelFloatAboveCs ])
-                ]
+                ] ++ additionalLabelAttributes)
                 [ text str ]
 
         _ ->
