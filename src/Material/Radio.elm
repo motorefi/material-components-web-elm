@@ -6,6 +6,7 @@ module Material.Radio exposing
     , setTouch
     , setAttributes
     , radio
+    , setInputAttributes
     )
 
 {-| Radio buttons allow the user to select one option from a set while seeing
@@ -123,6 +124,7 @@ type Config msg
         { checked : Bool
         , disabled : Bool
         , additionalAttributes : List (Html.Attribute msg)
+        , inputAttributes : List (Html.Attribute msg)
         , onChange : Maybe msg
         , touch : Bool
         }
@@ -136,6 +138,7 @@ config =
         { checked = False
         , disabled = False
         , additionalAttributes = []
+        , inputAttributes = []
         , onChange = Nothing
         , touch = True
         }
@@ -164,6 +167,13 @@ setDisabled disabled (Config config_) =
 setAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
 setAttributes additionalAttributes (Config config_) =
     Config { config_ | additionalAttributes = additionalAttributes }
+
+
+{-| Specify internal input attributes.
+-}
+setInputAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
+setInputAttributes inputAttributes (Config config_) =
+    Config { config_ | inputAttributes = inputAttributes }
 
 
 {-| Specify a message when the user changes a radio
@@ -246,7 +256,7 @@ changeHandler (Config { checked, onChange }) =
 
 
 nativeControlElt : Config msg -> Html msg
-nativeControlElt config_ =
+nativeControlElt ((Config { inputAttributes }) as config_) =
     Html.input
         (List.filterMap identity
             [ nativeControlCs
@@ -254,6 +264,7 @@ nativeControlElt config_ =
             , checkedProp config_
             , changeHandler config_
             ]
+            ++ inputAttributes
         )
         []
 

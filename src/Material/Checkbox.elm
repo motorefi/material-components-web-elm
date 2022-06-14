@@ -8,6 +8,7 @@ module Material.Checkbox exposing
     , checkbox
     , checked, unchecked
     , indeterminate
+    , setInputAttributes
     )
 
 {-| Checkboxes allow the user to select one or more items from a set.
@@ -151,6 +152,7 @@ config =
         { state = Nothing
         , disabled = False
         , additionalAttributes = []
+        , inputAttributes = []
         , onChange = Nothing
         , touch = True
         }
@@ -182,6 +184,13 @@ setDisabled disabled (Config config_) =
 setAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
 setAttributes additionalAttributes (Config config_) =
     Config { config_ | additionalAttributes = additionalAttributes }
+
+
+{-| Specify internal input attributes.
+-}
+setInputAttributes : List (Html.Attribute msg) -> Config msg -> Config msg
+setInputAttributes inputAttributes (Config config_) =
+    Config { config_ | inputAttributes = inputAttributes }
 
 
 {-| Specify a message when the user changes a checkbox
@@ -297,7 +306,7 @@ changeHandler (Config { onChange }) =
 
 
 nativeControlElt : Config msg -> Html msg
-nativeControlElt config_ =
+nativeControlElt ((Config { inputAttributes }) as config_) =
     Html.input
         (List.filterMap identity
             [ Just (Html.Attributes.type_ "checkbox")
@@ -306,6 +315,7 @@ nativeControlElt config_ =
             , indeterminateProp config_
             , changeHandler config_
             ]
+            ++ inputAttributes
         )
         []
 

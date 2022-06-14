@@ -8,6 +8,7 @@ type Config msg
         { state : Maybe State
         , disabled : Bool
         , additionalAttributes : List (Html.Attribute msg)
+        , inputAttributes : List (Html.Attribute msg)
         , onChange : Maybe msg
         , touch : Bool
         }
