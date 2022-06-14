@@ -10,6 +10,7 @@ module Material.Select exposing
     , setAttributes
     , filled
     , outlined
+    , setExternalLabelId, setId
     )
 
 {-| Select provides a single-option select menus.
@@ -222,6 +223,8 @@ import VirtualDom
 type Config a msg
     = Config
         { label : Maybe String
+        , externalLabelId : Maybe String
+        , id : Maybe String
         , disabled : Bool
         , required : Bool
         , valid : Bool
@@ -238,6 +241,8 @@ config : Config a msg
 config =
     Config
         { label = Nothing
+        , externalLabelId = Nothing
+        , id = Nothing
         , disabled = False
         , required = False
         , valid = True
@@ -253,6 +258,20 @@ config =
 setLabel : Maybe String -> Config a msg -> Config a msg
 setLabel label (Config config_) =
     Config { config_ | label = label }
+
+
+{-| Specify a label not managed by MDC
+-}
+setExternalLabelId : Maybe String -> Config a msg -> Config a msg
+setExternalLabelId externalLabelId (Config config_) =
+    Config { config_ | externalLabelId = externalLabelId }
+
+
+{-| Specify a select's id
+-}
+setId : Maybe String -> Config a msg -> Config a msg
+setId id (Config config_) =
+    Config { config_ | id = id }
 
 
 {-| Specify a select's selected value
@@ -316,7 +335,7 @@ type Variant
 select : Variant -> Config a msg -> SelectItem a msg -> List (SelectItem a msg) -> Html msg
 select variant config_ firstSelectItem remainingSelectItems =
     let
-        (Config { leadingIcon, selected, additionalAttributes, onChange }) =
+        (Config { leadingIcon, selected, additionalAttributes, onChange, externalLabelId, id }) =
             config_
 
         selectedIndex =
@@ -335,6 +354,7 @@ select variant config_ firstSelectItem remainingSelectItems =
     Html.node "mdc-select"
         (List.filterMap identity
             [ rootCs
+            , Maybe.map Html.Attributes.id id
             , noLabelCs config_
             , filledCs variant
             , outlinedCs variant
@@ -346,7 +366,10 @@ select variant config_ firstSelectItem remainingSelectItems =
             ]
             ++ additionalAttributes
         )
-        [ anchorElt []
+        [ anchorElt
+            [ Maybe.map (Html.Attributes.attribute "aria-labelledby") externalLabelId
+            , Maybe.map (Html.Attributes.attribute "aria-controls") (listboxIdVal id)
+            ]
             (List.concat
                 [ if variant == Filled then
                     List.filterMap identity
@@ -367,7 +390,7 @@ select variant config_ firstSelectItem remainingSelectItems =
                     []
                 ]
             )
-        , menuElt leadingIcon selected onChange firstSelectItem remainingSelectItems
+        , menuElt (listboxIdVal id) leadingIcon selected onChange firstSelectItem remainingSelectItems
         ]
 
 
@@ -450,15 +473,15 @@ rippleElt =
     Just (Html.span [ class "mdc-select__ripple" ] [])
 
 
-anchorElt : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+anchorElt : List (Maybe (Html.Attribute msg)) -> List (Html msg) -> Html msg
 anchorElt additionalAttributes nodes =
     Html.div
         ([ anchorCs
-         , buttonRole
+         , comboboxRole
          , ariaHaspopupAttr "listbox"
          , ariaExpanded False
          ]
-            ++ additionalAttributes
+            ++ List.filterMap identity additionalAttributes
         )
         nodes
 
@@ -468,14 +491,19 @@ anchorCs =
     class "mdc-select__anchor"
 
 
-buttonRole : Html.Attribute msg
-buttonRole =
-    Html.Attributes.attribute "role" "button"
+comboboxRole : Html.Attribute msg
+comboboxRole =
+    Html.Attributes.attribute "role" "combobox"
 
 
 ariaHaspopupAttr : String -> Html.Attribute msg
 ariaHaspopupAttr value =
     Html.Attributes.attribute "aria-haspopup" value
+
+
+listboxIdVal : Maybe String -> Maybe String
+listboxIdVal id =
+    Maybe.map (\x -> x ++ "-listbox") id
 
 
 ariaExpanded : Bool -> Html.Attribute msg
@@ -626,19 +654,23 @@ notchedOutlineElt config_ =
 
 
 menuElt :
-    Maybe (Icon msg)
+    Maybe String
+    -> Maybe (Icon msg)
     -> Maybe a
     -> Maybe (a -> msg)
     -> SelectItem a msg
     -> List (SelectItem a msg)
     -> Html msg
-menuElt leadingIcon selected onChange firstSelectItem remainingSelectItems =
+menuElt id leadingIcon selected onChange firstSelectItem remainingSelectItems =
     Menu.menu
         (Menu.config
             |> Menu.setAttributes
-                [ class "mdc-select__menu"
-                , style "width" "100%"
-                ]
+                ([ class "mdc-select__menu"
+                 , Html.Attributes.attribute "role" "listbox"
+                 , style "width" "100%"
+                 ]
+                    ++ List.filterMap identity [ Maybe.map Html.Attributes.id id ]
+                )
         )
         (listItem leadingIcon selected onChange firstSelectItem)
         (List.map (listItem leadingIcon selected onChange) remainingSelectItems)
